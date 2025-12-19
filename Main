@@ -1,0 +1,485 @@
+import java.util.Iterator;
+import java.util.NoSuchElementException;
+
+// абстрактный класс List
+abstract class List<T> implements Iterable<T> {
+    public abstract T get(int index);
+    public abstract void set(int index, T value);
+    public abstract int size();
+    public abstract void add(T value);
+    public abstract void add(int index, T value);
+    public abstract T remove(int index);
+
+    public boolean isEmpty() {
+        return size() == 0;
+    }
+
+    public boolean contains(T value) {
+        for (T item : this) {
+            if (item == null && value == null) return true;
+            if (item != null && item.equals(value)) return true;
+        }
+        return false;
+    }
+
+    public void clear() {
+        while (!isEmpty()) {
+            remove(0);
+        }
+    }
+
+    @Override
+    public String toString() {
+        StringBuilder sb = new StringBuilder("[");
+        Iterator<T> iterator = iterator();
+        while (iterator.hasNext()) {
+            sb.append(iterator.next());
+            if (iterator.hasNext()) sb.append(", ");
+        }
+        sb.append("]");
+        return sb.toString();
+    }
+}
+
+// класс Node для LinkedList
+class Node<T> {
+    T value;
+    Node<T> next;
+    Node<T> prev;
+
+    public Node(T value) {
+        this.value = value;
+        this.next = null;
+        this.prev = null;
+    }
+
+    public Node(T value, Node<T> next, Node<T> prev) {
+        this.value = value;
+        this.next = next;
+        this.prev = prev;
+    }
+}
+
+// класс ArrayList
+class ArrayList<T> extends List<T> {
+    private static final int INITIAL_CAPACITY = 10;
+    private static final double LOAD_FACTOR = 0.8;
+
+    private Object[] array;
+    private int size;
+    private int capacity;
+
+    public ArrayList() {
+        this.capacity = INITIAL_CAPACITY;
+        this.array = new Object[capacity];
+        this.size = 0;
+    }
+
+    public ArrayList(int initialCapacity) {
+        if (initialCapacity <= 0) {
+            throw new IllegalArgumentException("capacity must be positive");
+        }
+        this.capacity = initialCapacity;
+        this.array = new Object[capacity];
+        this.size = 0;
+    }
+
+    @SuppressWarnings("unchecked")
+    @Override
+    public T get(int index) {
+        checkIndex(index);
+        return (T) array[index];
+    }
+
+    @Override
+    public void set(int index, T value) {
+        checkIndex(index);
+        array[index] = value;
+    }
+
+    @Override
+    public int size() {
+        return size;
+    }
+
+    @Override
+    public void add(T value) {
+        ensureCapacity();
+        array[size] = value;
+        size++;
+    }
+
+    @Override
+    public void add(int index, T value) {
+        if (index < 0 || index > size) {
+            throw new IndexOutOfBoundsException("index: " + index + ", size: " + size);
+        }
+
+        ensureCapacity();
+
+        // сдвиг элементов вправо
+        for (int i = size; i > index; i--) {
+            array[i] = array[i - 1];
+        }
+
+        array[index] = value;
+        size++;
+    }
+
+    @SuppressWarnings("unchecked")
+    @Override
+    public T remove(int index) {
+        checkIndex(index);
+
+        T removed = (T) array[index];
+
+        // сдвиг элементов влево
+        for (int i = index; i < size - 1; i++) {
+            array[i] = array[i + 1];
+        }
+
+        array[size - 1] = null;
+        size--;
+
+        return removed;
+    }
+
+    // проверка вместимости
+    private void ensureCapacity() {
+        if ((double) size / capacity >= LOAD_FACTOR) {
+            int newCapacity = capacity * 2;
+            Object[] newArray = new Object[newCapacity];
+
+            // копируем элементы в новый массив
+            System.arraycopy(array, 0, newArray, 0, size);
+
+            array = newArray;
+            capacity = newCapacity;
+
+            System.out.println("array resized: " + capacity + " (load factor: " + LOAD_FACTOR + ")");
+        }
+    }
+
+    // проверка индекса
+    private void checkIndex(int index) {
+        if (index < 0 || index >= size) {
+            throw new IndexOutOfBoundsException("index: " + index + ", size: " + size);
+        }
+    }
+
+    // итератор для ArrayList
+    @Override
+    public Iterator<T> iterator() {
+        return new ArrayListIterator();
+    }
+
+    private class ArrayListIterator implements Iterator<T> {
+        private int currentIndex = 0;
+
+        @Override
+        public boolean hasNext() {
+            return currentIndex < size;
+        }
+
+        @SuppressWarnings("unchecked")
+        @Override
+        public T next() {
+            if (!hasNext()) {
+                throw new NoSuchElementException();
+            }
+            return (T) array[currentIndex++];
+        }
+    }
+
+    public int capacity() {
+        return capacity;
+    }
+}
+
+// класс LinkedList
+class LinkedList<T> extends List<T> {
+    private Node<T> head;
+    private Node<T> tail;
+    private int size;
+
+    public LinkedList() {
+        this.head = null;
+        this.tail = null;
+        this.size = 0;
+    }
+
+    @Override
+    public T get(int index) {
+        checkIndex(index);
+        return getNode(index).value;
+    }
+
+    @Override
+    public void set(int index, T value) {
+        checkIndex(index);
+        Node<T> node = getNode(index);
+        node.value = value;
+    }
+
+    @Override
+    public int size() {
+        return size;
+    }
+
+    @Override
+    public void add(T value) {
+        Node<T> newNode = new Node<>(value);
+
+        if (head == null) {
+            head = newNode;
+        } else {
+            tail.next = newNode;
+            newNode.prev = tail;
+        }
+        tail = newNode;
+
+        size++;
+    }
+
+    @Override
+    public void add(int index, T value) {
+        if (index < 0 || index > size) {
+            throw new IndexOutOfBoundsException("index: " + index + ", size: " + size);
+        }
+
+        if (index == size) {
+            add(value);
+            return;
+        }
+
+        Node<T> newNode = new Node<>(value);
+
+        if (index == 0) {
+            // добавление в начало
+            newNode.next = head;
+            if (head != null) {
+                head.prev = newNode;
+            }
+            head = newNode;
+            if (tail == null) {
+                tail = newNode;
+            }
+        } else {
+            // добавление в середину
+            Node<T> current = getNode(index);
+            Node<T> previous = current.prev;
+
+            previous.next = newNode;
+            newNode.prev = previous;
+            newNode.next = current;
+            current.prev = newNode;
+        }
+
+        size++;
+    }
+
+    @Override
+    public T remove(int index) {
+        checkIndex(index);
+
+        Node<T> nodeToRemove = getNode(index);
+        T removedValue = nodeToRemove.value;
+
+        if (nodeToRemove.prev != null) {
+            nodeToRemove.prev.next = nodeToRemove.next;
+        } else {
+            head = nodeToRemove.next;
+        }
+
+        if (nodeToRemove.next != null) {
+            nodeToRemove.next.prev = nodeToRemove.prev;
+        } else {
+            tail = nodeToRemove.prev;
+        }
+
+        size--;
+        return removedValue;
+    }
+
+    // находим node по индексу
+    private Node<T> getNode(int index) {
+        checkIndex(index);
+
+        Node<T> current;
+        if (index < size / 2) {
+            // идем с начала
+            current = head;
+            for (int i = 0; i < index; i++) {
+                current = current.next;
+            }
+        } else {
+            // идем с конца
+            current = tail;
+            for (int i = size - 1; i > index; i--) {
+                current = current.prev;
+            }
+        }
+
+        return current;
+    }
+
+    // проверка индекса
+    private void checkIndex(int index) {
+        if (index < 0 || index >= size) {
+            throw new IndexOutOfBoundsException("index: " + index + ", size: " + size);
+        }
+    }
+
+    // итератор для LinkedList
+    @Override
+    public Iterator<T> iterator() {
+        return new LinkedListIterator();
+    }
+
+    private class LinkedListIterator implements Iterator<T> {
+        private Node<T> current = head;
+
+        @Override
+        public boolean hasNext() {
+            return current != null;
+        }
+
+        @Override
+        public T next() {
+            if (!hasNext()) {
+                throw new NoSuchElementException();
+            }
+            T value = current.value;
+            current = current.next;
+            return value;
+        }
+    }
+
+    public void addFirst(T value) {
+        add(0, value);
+    }
+
+    public void addLast(T value) {
+        add(value);
+    }
+
+    public T getFirst() {
+        if (isEmpty()) {
+            throw new IllegalStateException("List is empty");
+        }
+        return get(0);
+    }
+
+    public T getLast() {
+        if (isEmpty()) {
+            throw new IllegalStateException("List is empty");
+        }
+        return get(size - 1);
+    }
+
+    public T removeFirst() {
+        if (isEmpty()) {
+            throw new IllegalStateException("List is empty");
+        }
+        return remove(0);
+    }
+
+    public T removeLast() {
+        if (isEmpty()) {
+            throw new IllegalStateException("List is empty");
+        }
+        return remove(size - 1);
+    }
+}
+
+// тест методов
+public class Main {
+    public static void main(String[] args) {
+        System.out.println("\n-------- ArrayList --------");
+        testArrayList();
+
+        System.out.println("\n-------- LinkedList --------");
+        testLinkedList();
+    }
+
+    private static void testArrayList() {
+        List<Integer> arrayList = new ArrayList<>(5);
+
+
+        for (int i = 1; i <= 10; i++) {
+            arrayList.add(i * 10);
+        }
+
+        System.out.println("ArrayList: " + arrayList);
+
+        System.out.println("\narrayList.get(3): " + arrayList.get(3));
+        System.out.println("arrayList.get(7): " + arrayList.get(7));
+
+        arrayList.set(2, 979);
+        System.out.println("после set(2, 979): " + arrayList);
+
+        // вставка в середину
+        arrayList.add(5, 2131);
+        System.out.println("после add(5, 2131): " + arrayList);
+
+        // удаление
+        int removed = arrayList.remove(3);
+        System.out.println("удален элемент " + removed + ": " + arrayList);
+
+        System.out.println("\nитерация по ArrayList:");
+        for (Integer num : arrayList) {
+            System.out.print(num + " ");
+        }
+        System.out.println();
+
+
+        // clear
+        arrayList.clear();
+        System.out.println("после очистки: " + arrayList + ", isEmpty: " + arrayList.isEmpty());
+    }
+
+    private static void testLinkedList() {
+        LinkedList<String> linkedList = new LinkedList<>();
+
+        linkedList.add("obito");
+        linkedList.add("saske");
+        linkedList.add("itachi");
+        linkedList.add("madara");
+
+        System.out.println("LinkedList: " + linkedList);
+        System.out.println("размер: " + linkedList.size());
+
+        System.out.println("\nLinkedList[0]: " + linkedList.get(0));
+        System.out.println("LinkedList[2]: " + linkedList.get(2));
+
+        linkedList.set(1, "shisui");
+        System.out.println("set(1, \"shisui\"): " + linkedList);
+
+        linkedList.add(2, "kakashi");
+        System.out.println("add(2, \"kakashi\"): " + linkedList);
+
+        linkedList.add(0, "nagato");
+        System.out.println("add(0, \"nagato\"): " + linkedList);
+
+        String removed = linkedList.remove(3);
+        System.out.println("удален элемент '" + removed + "': " + linkedList);
+
+        System.out.println("\nитерация по LinkedList: ");
+        for (String fruit : linkedList) {
+            System.out.print(fruit + " ");
+        }
+        System.out.println();
+
+        LinkedList<String> ll = linkedList;
+        System.out.println("первый элемент: " + ll.getFirst());
+        System.out.println("последний элемент: " + ll.getLast());
+
+        ll.addFirst("naruto");
+        ll.addLast("iruka");
+        System.out.println("после addFirst и addLast: " + linkedList);
+
+        ll.removeFirst();
+        ll.removeLast();
+        System.out.println("после removeFirst и removeLast: " + linkedList);
+    }
+}
