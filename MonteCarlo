@@ -1,0 +1,79 @@
+import java.util.Random;
+
+public class MonteCarlo {
+
+    public static double function(double x) {
+        return Math.sin(x); // функция для примера
+    }
+
+    public static void main(String[] args) throws InterruptedException {
+        final double a = 0.0;
+        final double b = Math.PI; // границы интеграла
+        final long totalPoints = 1000000; // количество точек
+        final int numThreads = 4; // количество потоков
+
+        System.out.println("метод Монте-Карло\n");
+        // результаты потоков
+        double[] threadSums = new double[numThreads];
+
+        // количество точек в каждом потоке
+        long[] threadPoints = new long[numThreads];
+
+        // распределение точек по потокам
+        long basePoints = totalPoints / numThreads;
+        int extraPoints = (int)(totalPoints % numThreads);
+
+        for (int i = 0; i < numThreads; i++) {
+            threadPoints[i] = basePoints;
+            if (i < extraPoints) {
+                threadPoints[i]++;
+            }
+        }
+
+        // создание и запуск потоков
+        Thread[] threads = new Thread[numThreads];
+
+        for (int i = 0; i < numThreads; i++) {
+            final int threadId = i;
+            final long points = threadPoints[i];
+
+            threads[i] = new Thread(() -> {
+                Random random = new Random(threadId * System.currentTimeMillis());
+                double sum = 0.0;
+
+                for (long j = 0; j < points; j++) {
+                    double x = a + (b - a) * random.nextDouble();
+                    sum += function(x);
+                }
+
+                threadSums[threadId] = sum;
+                System.out.printf("поток %d вычислил %d точек, сумма %.2f\n",
+                        threadId + 1, points, sum);
+            });
+
+            threads[i].start();
+        }
+
+        for (Thread thread : threads) {
+            thread.join();
+        }
+
+        // сумма всех потоков
+        double totalSum = 0.0;
+        long totalProcessedPoints = 0;
+
+        for (int i = 0; i < numThreads; i++) {
+            totalSum += threadSums[i];
+            totalProcessedPoints += threadPoints[i];
+        }
+
+        // вычисление интеграла
+        double average = totalSum / totalProcessedPoints;
+        double integral = (b - a) * average;
+
+        System.out.printf("\nобщая сумма: %.8f\n", totalSum);
+        System.out.printf("среднее значение: %.8f\n", average);
+        System.out.printf("результат вычисления интеграла от %.2f до %.2f ≈ %.8f\n",
+                a, b, integral);
+    }
+}
