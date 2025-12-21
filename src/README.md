@@ -23,26 +23,18 @@ Weather Backend Service (только на Java)
 
 Общая идея
 
-Приложение представляет собой **простейший backend-сервис погоды**, который:
+Приложение представляет собой простой backend-сервис погоды, который:
 1. Получает данные о погоде из публичного Weather API
 2. Параллельно обновляет погоду для нескольких городов
 3. Хранит актуальные данные в памяти
 4. Предоставляет HTTP API для получения погоды
-Архитектура приближена к реальной backend-разработке, но упрощена для учебных целей.
+Архитектура приближена к реальной backend-разработке.
 
 ---
 
 Архитектура
 
-HTTP Client
-     ↓
-WeatherHttpServer
-     ↓
-WeatherService (multi-threaded, cache)
-     ↓
-WeatherClient
-     ↓
-Public Weather API (Open-Meteo)
+HTTP Client -> WeatherHttpServer -> WeatherService (multi-threaded, cache) -> WeatherClient -> Public Weather API (Open-Meteo)
 
 ---
 
@@ -75,7 +67,6 @@ HTTP API
 Получить погоду для всех городов:
 GET /weather
 
-
 Ответ:
 {
   "city": "Berlin",
@@ -83,6 +74,7 @@ GET /weather
   "windSpeed": 12.4,
   "weatherCode": 3
 }
+
 ---
 
 Получить погоду для одного города:
